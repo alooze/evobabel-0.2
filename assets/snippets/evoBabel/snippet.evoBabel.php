@@ -13,7 +13,7 @@ if (isset($_REQUEST['id']) && (int)$_REQUEST['id'] != 0) {
 
         /*****************создаем версии********************/
         if (isset($_GET['ebabel']) && (int)$_GET['ebabel'] != 0 && isset($_GET['parent']) && (int)$_GET['parent'] != 0){
-            $res = $eB->makeVersion();
+            $res = $eB->makeVersion((int)$_GET['ebabel'], (int)$_GET['parent']);
             echo $res;//возвращаем js для переадресации на текущую страницу
         }
         /*********************** конец создания версий ****************/
@@ -29,3 +29,4 @@ echo '<div id="eB_relations">' . $out . '</div>';
 if (isset($params['show_panel']) && $params['show_panel'] == '1') {
     echo '<script type="text/javascript" src="../assets/snippets/evoBabel/script.js"></script>';
 }
+

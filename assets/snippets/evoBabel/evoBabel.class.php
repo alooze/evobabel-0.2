@@ -296,7 +296,7 @@ public function showRelations(){
             if ($k != $this->topid) {
                 if (isset($rels[$v['alias']]) && $this->checkPage($rels[$v['alias']])) {
                     $rel_rows.='
-                        <div class="eB_row" style="height:32px;">
+                        <div class="eB_row" style="height:34px;">
                             <a href="index.php?a=27&id='.$rels[$v['alias']].'" class="primary">
                                 <img alt="icons_save" src="'.$this->iconfolder.'save.png"/> '.$v['name'].' -  перейти
                             </a>

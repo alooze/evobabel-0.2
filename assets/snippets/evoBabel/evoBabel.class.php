@@ -7,15 +7,15 @@ class evoBabel{
 
 public $modx;
 public $id; //id текущего ресурса
-public $content_table;
-public $tvs_table;
-public $rel_tv_id;
-public $lang_template_id;
-public $version_lang_id;
-public $version_parent_id;
-public $langs=array();
-public $params=array();
-public $topid;
+public $content_table; //полное имя таблицы site_content
+public $tvs_table; //полное имя таблицы site_tmplvar_contentvalues
+public $rel_tv_id; //id TV языковых связей
+public $lang_template_id; // id шаблона "язык"
+public $version_lang_id; //id языка создаваемой версии
+public $version_parent_id; // id будущего родителя создаваемого ресурса в другой версии
+public $langs=array(); //массив всех языков сайта вида id=>(name,home,alias)
+public $params=array(); //параметры вызова сниппета
+public $topid; // id языка ресурса, из которого будем делать версию
 public $iconfolder;
 public $theme;
 
@@ -213,7 +213,7 @@ public function getRelations($id){//получаем строку отношен
     return $res;
 }
 
-public function getRelationsArray($relations){ //array ['lang_alias']=>['lang_page_id']
+public function getRelationsArray($relations){ //array ['lang_alias']=>['lang_id']
     $arr=array();
     if ($relations != '') {
         $arr1 = explode("||", $relations);
@@ -227,11 +227,11 @@ public function getRelationsArray($relations){ //array ['lang_alias']=>['lang_pa
     return $arr;
 }
 
-public function getFullRelationsArray($id, $langsArray){//полные отношения - недостающие заменяем на корневые языки
-    if (!isset($langsArray[$id])) {
+public function getFullRelationsArray($id){//полные отношения - недостающие заменяем на корневые языки
+    if (!isset($this->langs[$id])) {
         $relations = $this->getRelations($id);
         $relationsArray = $this->getRelationsArray($relations);
-        foreach ($langsArray as $k=>$v) {
+        foreach ($this->langs as $k=>$v) {
             if (!isset($relationsArray[$v['alias']])) {
                 $relationsArray[$v['alias']] = $k;
             }
@@ -244,16 +244,16 @@ public function getFullRelationsArray($id, $langsArray){//полные отно�
     return $relationsArray;
 }
 
-public function makeVersion(){
-    $this->version_lang_id = (int)$_GET['ebabel'];
-    $this->version_parent_id = (int)$_GET['parent'];
-    //копируем ресурс вместе со всеми ТВ
-    $new_id = $this->copyDoc($this->id, $this->version_parent_id, $this->langs[$this->version_lang_id]['name']);
+public function makeVersion($version_lang_id, $version_parent_id){
+    // $this->version_lang_id = $version_lang_id;
+    // $this->version_parent_id = $version_parent_id;
+    // копируем ресурс вместе со всеми ТВ
+    $new_id = $this->copyDoc($this->id, $version_parent_id, $this->langs[$version_lang_id]['name']);
     if ($new_id) {//если ресурс скопирован, создаем новые связи
         //проверяем старые связи
         $curr_rel = $this->getRelations($this->id);
         if (!$curr_rel || $curr_rel == '') {//если связи не было, то просто создаем новую
-            $new_rel = $this->langs[$this->topid]['alias'] . ':' . $this->id . '||' . $this->langs[$this->version_lang_id]['alias'] . ':' . $new_id;
+            $new_rel = $this->langs[$this->topid]['alias'] . ':' . $this->id . '||' . $this->langs[$version_lang_id]['alias'] . ':' . $new_id;
             $this->saveTV($this->id, $this->rel_tv_id, $new_rel);
             $this->saveTV($new_id, $this->rel_tv_id, $new_rel);
         } else {//если связь есть, то обновляем ее везде
@@ -262,7 +262,7 @@ public function makeVersion(){
             foreach ($this->langs as $k=>$v) {
                 if (isset($rel_arr[$v['alias']]) && $this->checkPage($rel_arr[$v['alias']])) {//если страница старая
                     $new_rel .= $v['alias'] . ':' . $rel_arr[$v['alias']] . '||';
-                } elseif ($k == $this->version_lang_id) {
+                } elseif ($k == $version_lang_id) {
                     $new_rel .= $v['alias'] . ':' . $new_id . '||';
                 } else {
 
@@ -284,7 +284,7 @@ public function showRelations(){
 
     //id родительского ресурса и его полные связи
     $parent_id = $this->getValue("SELECT parent FROM " . $this->content_table . " WHERE id={$this->id} LIMIT 0, 1");
-    $parent_rels = $this->getFullRelationsArray($parent_id, $this->langs);
+    $parent_rels = $this->getFullRelationsArray($parent_id);
 
     //получаем связь текущей страницы
     $relation = $this->getRelations($this->id);
@@ -296,7 +296,7 @@ public function showRelations(){
             if ($k != $this->topid) {
                 if (isset($rels[$v['alias']]) && $this->checkPage($rels[$v['alias']])) {
                     $rel_rows.='
-                        <div class="eB_row" style="height:34px;">
+                        <div class="eB_row" style="height:32px;">
                             <a href="index.php?a=27&id='.$rels[$v['alias']].'" class="primary">
                                 <img alt="icons_save" src="'.$this->iconfolder.'save.png"/> '.$v['name'].' -  перейти
                             </a>
